@@ -4,7 +4,7 @@ Date: Nov 2019
 """
 import argparse
 import os
-from data_utils.S3DISDataLoader import S3DISDataset
+from data_utils.BelHouse3DDataLoader import BelHouse3DSemSegDataset
 import torch
 import datetime
 import logging
@@ -88,22 +88,30 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = 'data/stanford_indoor3d/'
     NUM_CLASSES = 19
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
-    print("start loading test data ...")
-    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
+    TRAIN_DATASET = BelHouse3DSemSegDataset(
+    root='/content/data/belhouse3d/processed/semseg/IID-nonoccluded',
+    split='train',
+    num_points=args.npoint,
+    transform=None
+)
 
+    print("start loading test data ...")
+    TEST_DATASET = BelHouse3DSemSegDataset(
+    root='/content/data/belhouse3d/processed/semseg/IID-nonoccluded',
+    split='test',
+    num_points=args.npoint,
+    transform=None
+)
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
     testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
                                                  pin_memory=True, drop_last=True)
-    weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
@@ -191,7 +199,7 @@ def main(args):
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
             target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weights)
+            loss = criterion(seg_pred, target, trans_feat, weight=None)
             loss.backward()
             optimizer.step()
 
