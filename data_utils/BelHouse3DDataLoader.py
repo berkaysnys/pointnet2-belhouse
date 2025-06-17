@@ -7,10 +7,7 @@ from torch.utils.data import Dataset
 
 class BelHouse3DSemSegDataset(Dataset):
     def __init__(self, root, split='train', num_points=2048, use_blocks=True, transform=None):
-        """
-        root: Path to IID-nonoccluded or OOD-occluded directory
-        split: One of ['train', 'val', 'test']
-        """
+
         self.root = root
         self.split = split
         self.num_points = num_points
