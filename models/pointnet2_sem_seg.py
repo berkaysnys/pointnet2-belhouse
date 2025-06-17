@@ -20,8 +20,8 @@ class get_model(nn.Module):
         self.conv2 = nn.Conv1d(128, num_classes, 1)
 
     def forward(self, xyz):
-        l0_points = xyz
-        l0_xyz = xyz[:,:3,:]
+        l0_xyz = xyz
+        l0_points = None
 
         l1_xyz, l1_points = self.sa1(l0_xyz, l0_points)
         l2_xyz, l2_points = self.sa2(l1_xyz, l1_points)
