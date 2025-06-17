@@ -1,5 +1,5 @@
 """
-Author: Benny
+Aut-hor: Benny
 Date: Nov 2019
 """
 import argparse
@@ -50,7 +50,6 @@ def parse_args():
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
 
     return parser.parse_args()
-
 
 def main(args):
     def log_string(str):
@@ -107,10 +106,10 @@ def main(args):
     num_points=args.npoint,
     transform=None
 )
-    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
+    trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=2,
                                                   pin_memory=True, drop_last=True,
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
-    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
+    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=2,
                                                  pin_memory=True, drop_last=True)
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
@@ -248,7 +247,7 @@ def main(args):
 
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat, weights)
+                loss = criterion(seg_pred, target, trans_feat, weight=None)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
@@ -263,12 +262,12 @@ def main(args):
                     total_iou_deno_class[l] += np.sum(((pred_val == l) | (batch_label == l)))
 
             labelweights = labelweights.astype(np.float32) / np.sum(labelweights.astype(np.float32))
-            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=np.float) + 1e-6))
+            mIoU = np.mean(np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6))
             log_string('eval mean loss: %f' % (loss_sum / float(num_batches)))
             log_string('eval point avg class IoU: %f' % (mIoU))
             log_string('eval point accuracy: %f' % (total_correct / float(total_seen)))
             log_string('eval point avg class acc: %f' % (
-                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
+                np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=float) + 1e-6))))
 
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):
