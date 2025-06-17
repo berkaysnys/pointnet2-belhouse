@@ -21,8 +21,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['ceiling', 'floor', 'wall', 'beam', 'column', 'window', 'door', 'table', 'chair', 'sofa', 'bookcase',
-           'board', 'clutter']
+classes = ['wall', 'floor', 'ceiling', 'door', 'window', 'cabinet', 'shelf', 'island', 'chair', 'pillow', 'couch',
+           'dining_table', 'desk', 'side_table','coffee_table','water_closet','bathtub','bed','clutter']
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -89,7 +89,7 @@ def main(args):
     log_string(args)
 
     root = 'data/stanford_indoor3d/'
-    NUM_CLASSES = 13
+    NUM_CLASSES = 19
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
 
