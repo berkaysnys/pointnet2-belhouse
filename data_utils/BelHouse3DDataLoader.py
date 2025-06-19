@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from collections import Counter
 
 
 class BelHouse3DSemSegDataset(Dataset):
@@ -20,6 +21,28 @@ class BelHouse3DSemSegDataset(Dataset):
 
         if len(self.files) == 0:
             raise RuntimeError(f"No .npy files found in {search_path}")
+
+        self.class_weights = self.calculate_class_weights()
+
+    def calculate_class_weights(self):
+        label_counts = Counter()
+        for file_path in self.files:
+            data = np.load(file_path)
+            labels = data[:, 3].astype(np.int64)
+            label_counts.update(labels)
+
+        total_count = sum(label_counts.values())
+        num_classes = max(label_counts.keys()) + 1 
+
+        freq = np.zeros(num_classes)
+        for cls in range(num_classes):
+            freq[cls] = label_counts.get(cls, 0) / total_count
+
+        weights = 1 / (freq + 1e-6)
+
+        weights = weights / weights.max()
+
+        return torch.tensor(weights, dtype=torch.float32)
 
     def __len__(self):
         return len(self.files)
