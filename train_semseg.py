@@ -99,22 +99,6 @@ def main(args):
     transform=None
 )
 
-    def compute_class_weights(dataset, num_classes):
-        label_counts = np.zeros(num_classes)
-        for i in range(len(dataset)):
-            _, labels = dataset[i]
-            labels_np = labels.numpy()
-            for c in range(num_classes):
-                label_counts[c] += np.sum(labels_np == c)
-        label_counts += 1e-6  
-        weights = 1.0 / label_counts
-        weights = weights / np.sum(weights) * num_classes  
-        return torch.FloatTensor(weights).cuda()
-
-    class_weights = compute_class_weights(TRAIN_DATASET, NUM_CLASSES)
-    log_string(f"Class weights: {class_weights.cpu().numpy()}")
-
-
     print("start loading test data ...")
     TEST_DATASET = BelHouse3DSemSegDataset(
     root='/content/data/belhouse3d/processed/semseg/IID-nonoccluded',
@@ -214,7 +198,7 @@ def main(args):
 
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()
             target = target.view(-1, 1)[:, 0]
-            loss = criterion(seg_pred, target, trans_feat, weight=class_weights)
+            loss = criterion(seg_pred, target, trans_feat, weight=None)
             loss.backward()
             optimizer.step()
 
@@ -263,7 +247,7 @@ def main(args):
 
                 batch_label = target.cpu().data.numpy()
                 target = target.view(-1, 1)[:, 0]
-                loss = criterion(seg_pred, target, trans_feat, weight=class_weights)
+                loss = criterion(seg_pred, target, trans_feat, weight=None)
                 loss_sum += loss
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
