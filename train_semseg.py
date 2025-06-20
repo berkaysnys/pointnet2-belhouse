@@ -99,21 +99,21 @@ def main(args):
     transform=None
 )
 
-    print("start loading test data ...")
-    TEST_DATASET = BelHouse3DSemSegDataset(
+    print("start loading validation data ...")
+    VAL_DATASET = BelHouse3DSemSegDataset(
     root='/content/data/belhouse3d/processed/semseg/IID-nonoccluded',
-    split='test',
+    split='val',
     num_points=args.npoint,
     transform=None
 )
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=2,
                                                   pin_memory=True, drop_last=True,
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
-    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=2,
+    valDataLoader = torch.utils.data.DataLoader(VAL_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=2,
                                                  pin_memory=True, drop_last=True)
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
-    log_string("The number of test data is: %d" % len(TEST_DATASET))
+    log_string("The number of validation data is: %d" % len(VAL_DATASET))
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
@@ -224,7 +224,7 @@ def main(args):
 
         '''Evaluate on chopped scenes'''
         with torch.no_grad():
-            num_batches = len(testDataLoader)
+            num_batches = len(valDataLoader)
             total_correct = 0
             total_seen = 0
             loss_sum = 0
@@ -235,7 +235,7 @@ def main(args):
             classifier = classifier.eval()
 
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
-            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+            for i, (points, target) in tqdm(enumerate(valDataLoader), total=len(valDataLoader), smoothing=0.9):
                 points = points.data.numpy()
                 points = torch.Tensor(points)
                 points, target = points.float().cuda(), target.long().cuda()
