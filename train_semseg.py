@@ -273,7 +273,7 @@ def main(args):
             for l in range(NUM_CLASSES):
                 iou_per_class_str += 'class %s weight: %.3f, IoU: %.3f \n' % (
                     seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])), labelweights[l - 1],
-                    total_correct_class[l] / float(total_iou_deno_class[l]))
+                    total_correct_class[l] / (float(total_iou_deno_class[l]) + 1e-6))
 
             log_string(iou_per_class_str)
             log_string('Eval mean loss: %f' % (loss_sum / num_batches))
