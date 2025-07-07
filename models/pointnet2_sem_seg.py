@@ -49,7 +49,4 @@ class get_loss(nn.Module):
         return total_loss
 
 if __name__ == '__main__':
-    import  torch
-    model = get_model(19)
-    xyz = torch.rand(6, 3, 2048)
-    (model(xyz))
+    pass
