@@ -1,22 +1,31 @@
 import torch.nn as nn
+import torch
 import torch.nn.functional as F
 from models.pointnet2_utils import PointNetSetAbstraction,PointNetFeaturePropagation
 
-class ContextAggregationModule(nn.Module):
+class SelfAttentionModule(nn.Module):
     def __init__(self, channels):
-        super(ContextAggregationModule, self).__init__()
-        self.conv1 = nn.Conv1d(channels, channels, 3, padding=1, dilation=1)
-        self.conv2 = nn.Conv1d(channels, channels, 3, padding=2, dilation=2)
-        self.conv3 = nn.Conv1d(channels, channels, 3, padding=4, dilation=4)
+        super(SelfAttentionModule, self).__init__()
+        self.query = nn.Conv1d(channels, channels // 8, 1)
+        self.key = nn.Conv1d(channels, channels // 8, 1)
+        self.value = nn.Conv1d(channels, channels, 1)
+        self.gamma = nn.Parameter(torch.zeros(1))
         self.bn = nn.BatchNorm1d(channels)
 
     def forward(self, x):
-        out1 = self.conv1(x)
-        out2 = self.conv2(x)
-        out3 = self.conv3(x)
-        out = out1 + out2 + out3
+        B, C, N = x.shape
+        Q = self.query(x).permute(0, 2, 1)  # [B, N, C']
+        K = self.key(x)                    # [B, C', N]
+        V = self.value(x)                  # [B, C, N]
+
+        attention = F.softmax(torch.bmm(Q, K), dim=-1)
+
+        out = torch.bmm(V, attention.permute(0, 2, 1))  # [B, C, N]
+
+        out = self.gamma * out + x  
         out = self.bn(out)
         return F.relu(out)
+
 
 class get_model(nn.Module):
     def __init__(self, num_classes):
@@ -26,12 +35,14 @@ class get_model(nn.Module):
         self.sa3 = PointNetSetAbstraction(64, 0.4, 32, 128 + 3, [128, 128, 256], False)
         self.sa4 = PointNetSetAbstraction(16, 0.8, 32, 256 + 3, [256, 256, 512], False)
 
-        self.context = ContextAggregationModule(512)
-
         self.fp4 = PointNetFeaturePropagation(768, [256, 256])
         self.fp3 = PointNetFeaturePropagation(384, [256, 256])
         self.fp2 = PointNetFeaturePropagation(320, [256, 128])
         self.fp1 = PointNetFeaturePropagation(128, [128, 128, 128])
+
+        self.context_l4 = SelfAttentionModule(512)
+        self.context_l3 = SelfAttentionModule(256)
+
         self.conv1 = nn.Conv1d(128, 128, 1)
         self.bn1 = nn.BatchNorm1d(128)
         self.drop1 = nn.Dropout(0.5)
@@ -46,7 +57,8 @@ class get_model(nn.Module):
         l3_xyz, l3_points = self.sa3(l2_xyz, l2_points)
         l4_xyz, l4_points = self.sa4(l3_xyz, l3_points)
 
-        l4_points = self.context(l4_points)
+        l4_points = self.context_l4(l4_points)
+        l3_points = self.context_l3(l3_points)
 
         l3_points = self.fp4(l3_xyz, l4_xyz, l3_points, l4_points)
         l2_points = self.fp3(l2_xyz, l3_xyz, l2_points, l3_points)
