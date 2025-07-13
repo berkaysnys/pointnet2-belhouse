@@ -154,6 +154,9 @@ def main(args):
     else:
         optimizer = torch.optim.SGD(classifier.parameters(), lr=args.learning_rate, momentum=0.9)
 
+    from torch.optim.lr_scheduler import CosineAnnealingLR
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.epoch, eta_min=1e-5)
+
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
@@ -169,10 +172,7 @@ def main(args):
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
         log_string('**** Epoch %d (%d/%s) ****' % (global_epoch + 1, epoch + 1, args.epoch))
-        lr = max(args.learning_rate * (args.lr_decay ** (epoch // args.step_size)), LEARNING_RATE_CLIP)
-        log_string('Learning rate:%f' % lr)
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+        log_string('Learning rate: %f' % scheduler.get_last_lr()[0])
         momentum = MOMENTUM_ORIGINAL * (MOMENTUM_DECCAY ** (epoch // MOMENTUM_DECCAY_STEP))
         if momentum < 0.01:
             momentum = 0.01
@@ -221,6 +221,7 @@ def main(args):
             }
             torch.save(state, savepath)
             log_string('Saving model....')
+        scheduler.step()
 
         '''Evaluate on chopped scenes'''
         with torch.no_grad():
