@@ -16,9 +16,9 @@ def knn_point(k, xyz, new_xyz):
     _, idx = dist.topk(k=k, dim=-1, largest=False, sorted=False)
     return idx
 
-class SimpleRelativeSelfAttention(nn.Module):
+class ContextAggregationModule(nn.Module):
     def __init__(self, channels, k=16, groups=4):
-        super(SimpleRelativeSelfAttention, self).__init__()
+        super(ContextAggregationModule, self).__init__()
         self.k = k
         self.channels = channels
         self.inter_channels = channels // 4
@@ -73,7 +73,7 @@ class get_model(nn.Module):
         self.sa3 = PointNetSetAbstraction(64, 0.4, 32, 128 + 3, [128, 128, 256], False)
         self.sa4 = PointNetSetAbstraction(16, 0.8, 32, 256 + 3, [256, 256, 512], False)
 
-        self.context_l2 = SimpleRelativeSelfAttention(128, k=16, groups=4)
+        self.context_l2 = ContextAggregationModule(128, k=16, groups=4)
 
         self.fp4 = PointNetFeaturePropagation(768, [256, 256])
         self.fp3 = PointNetFeaturePropagation(384, [256, 256])
